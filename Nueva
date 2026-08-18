@@ -1,0 +1,92 @@
+from pathlib import Path
+import zipfile, re
+
+src = Path("/mnt/data/remisiones_zavala_simple_v6/index.html")
+html = src.read_text(encoding="utf-8")
+
+# Replace the date display HTML with three independently positioned values.
+old = '''<div class="date-picker-wrap" id="dateTap" role="button" aria-label="Elegir fecha">
+        <input id="date" class="date-native" type="date" aria-label="Seleccionar fecha" tabindex="-1">
+        <div class="date-parts" aria-hidden="true">
+          <span id="dateDay">--</span>
+          <span class="date-sep">/</span>
+          <span id="dateMonth">--</span>
+          <span class="date-sep">/</span>
+          <span id="dateYear">----</span>
+        </div>
+      </div>'''
+new = '''<div class="date-picker-wrap" id="dateTap" role="button" aria-label="Elegir fecha">
+        <input id="date" class="date-native" type="date" aria-label="Seleccionar fecha" tabindex="-1">
+        <span id="dateDay" class="date-value date-day">--</span>
+        <span id="dateMonth" class="date-value date-month">--</span>
+        <span id="dateYear" class="date-value date-year">----</span>
+      </div>'''
+if old not in html:
+    raise RuntimeError("No encontré el bloque de fecha esperado en V6.")
+html = html.replace(old, new, 1)
+
+# Replace the full date CSS section with independently centered values.
+pattern = re.compile(
+    r'\.date-picker-wrap\{.*?\.date-sep\{\s*font-weight:700;\s*\}',
+    re.S
+)
+replacement = '''.date-picker-wrap{
+  position:absolute;
+  left:57.8%;
+  top:6.25%;
+  width:36.5%;
+  height:6.2%;
+  z-index:8;
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+}
+.date-native{
+  position:absolute;
+  inset:0;
+  width:1px;
+  height:1px;
+  opacity:0;
+  pointer-events:none;
+  border:0;
+  padding:0;
+}
+.date-picker-wrap:active{
+  background:rgba(225,238,250,.15);
+}
+.date-value{
+  position:absolute;
+  top:43%;
+  transform:translate(-50%,-50%);
+  color:#082B50;
+  font-family:Georgia,"Times New Roman",serif;
+  font-weight:700;
+  font-size:clamp(9px,2vw,15px);
+  line-height:1;
+  text-align:center;
+  white-space:nowrap;
+  pointer-events:none;
+}
+.date-day{left:25.2%; width:18%;}
+.date-month{left:55.0%; width:18%;}
+.date-year{left:86.0%; width:24%;}'''
+html, count = pattern.subn(replacement, html, count=1)
+if count != 1:
+    raise RuntimeError("No pude reemplazar el CSS completo de fecha.")
+
+# Keep date values clean, no separators typed over background slashes.
+# Make sure calendar tap continues to work.
+# No additional JS changes are required because setDateParts targets same IDs.
+
+# Save as V7
+out_dir = Path("/mnt/data/remisiones_zavala_simple_v7")
+out_dir.mkdir(exist_ok=True)
+index_path = out_dir / "index.html"
+index_path.write_text(html, encoding="utf-8")
+
+zip_path = Path("/mnt/data/remisiones_zavala_simple_v7.zip")
+with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
+    z.write(index_path, arcname="index.html")
+
+print(index_path)
+print(zip_path)
