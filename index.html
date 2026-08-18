@@ -66,21 +66,10 @@ button.danger{color:#a92828}
 .result small{color:#687468}
 .close{width:100%;border-radius:0;box-shadow:none}
 
-.keyboard-tools{
- position:fixed;left:50%;transform:translateX(-50%);
- bottom:calc(env(safe-area-inset-bottom) + 8px);
- z-index:200;display:none;gap:8px;padding:6px;
- background:rgba(255,255,255,.97);border-radius:14px;
- box-shadow:0 8px 28px #0003;border:1px solid #d8e1d5
-}
-.keyboard-tools.show{display:flex}
-.keyboard-tools button{
- box-shadow:none;border:1px solid #d8e1d5;
- width:74px;height:42px;padding:0;
- font-size:26px;font-weight:800;line-height:1;
- background:#173b22;color:white
-}
-.keyboard-tools .nav-key{background:#173b22;color:white}
+
+
+
+
 .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#173b22;color:#fff;padding:8px 13px;border-radius:999px;opacity:0;z-index:210}
 .toast.show{opacity:1}
 
@@ -99,7 +88,7 @@ button.danger{color:#a92828}
 @media print{
  @page{size:5.5in 8.5in;margin:0}
  html,body{background:white}
- .toolbar,.modal,.keyboard-tools,.toast{display:none!important}
+ .toolbar,.modal,.toast{display:none!important}
  .viewer{padding:0;display:block}
  .sheet{width:5.5in;height:8.5in;max-width:none;box-shadow:none}
 }
@@ -136,10 +125,6 @@ button.danger{color:#a92828}
  </div>
 </div>
 
-<div class="keyboard-tools" id="keyboardTools">
- <button id="prevKeyboard" class="nav-key" aria-label="Anterior">‹</button>
- <button id="nextKeyboard" class="nav-key" aria-label="Siguiente">›</button>
-</div>
 <div class="toast" id="toast">Guardado</div>
 
 <script>
@@ -200,7 +185,7 @@ function makeInput(cls,top,val,i,key){
  const el=document.createElement("input");el.className="edit cell "+cls;el.style.top=top+"%";el.dataset.row=i;el.dataset.key=key;el.type="text";
  el.value=val||"";el.inputMode=(key==="q"||key==="price")?"decimal":"text";el.autocomplete="off";el.setAttribute("enterkeyhint","next");
  if(key==="price"&&el.value!==""){const n=parseFloat(el.value);if(!isNaN(n))el.value=money(n)}
- el.onfocus=()=>{activeField=el;showTools();if(key==="price")el.value=String(current().rows[i][key]||"")};
+ el.onfocus=()=>{if(key==="price")el.value=String(current().rows[i][key]||"")};
  el.oninput=()=>{current().rows[i][key]=el.value;$("#t"+i).textContent=rowTotal(current().rows[i])?money(rowTotal(current().rows[i])):"";$("#grand").textContent=money(noteTotal(current()));save()};
  el.onchange=()=>{if(key==="price"){const n=parseFloat(String(el.value).replace(/[^0-9.,-]/g,"").replace(",","."));if(!isNaN(n)){current().rows[i][key]=String(n);el.value=money(n)}}save(true)};
  el.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();nextField(i,key)}};
@@ -225,23 +210,8 @@ function prevField(i,key){
  }
  document.querySelector(`input[data-row="${r}"][data-key="${k}"]`)?.focus()
 }
-let activeField=null;
-function showTools(){$("#keyboardTools").classList.add("show");positionTools()}
-function positionTools(){
- if(!window.visualViewport)return;const v=window.visualViewport,k=Math.max(0,window.innerHeight-v.height-v.offsetTop);$("#keyboardTools").style.bottom=(k+8)+"px"
+const i=Number(el.dataset.row),k=el.dataset.key;if(!isNaN(i)&&k)nextField(i,k)
 }
-function goNext(){
- const el=activeField||document.activeElement;
- if(el.id==="client"){document.querySelector('input[data-row="0"][data-key="q"]')?.focus();return}
- const i=Number(el.dataset.row),k=el.dataset.key;if(!isNaN(i)&&k)nextField(i,k)
-}
-function goPrev(){
- const el=activeField||document.activeElement;
- if(el.id==="client")return;
- const i=Number(el.dataset.row),k=el.dataset.key;
- if(!isNaN(i)&&k)prevField(i,k)
-}
-
 function searchRender(q){
  const box=$("#results");box.innerHTML="";
  const s=q.toLowerCase();
@@ -253,7 +223,6 @@ function searchRender(q){
 function toast(){$("#toast").classList.add("show");setTimeout(()=>$("#toast").classList.remove("show"),700)}
 
 $("#dateNative").oninput=e=>{current().date=e.target.value;showDate(e.target.value);save()};
-$("#client").onfocus=e=>{activeField=e.target;showTools()};
 $("#client").oninput=e=>{current().client=e.target.value;save()};
 $("#client").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();document.querySelector('input[data-row="0"][data-key="q"]')?.focus()}};
 $("#newBtn").onclick=()=>newNote(true);
@@ -262,9 +231,6 @@ $("#printBtn").onclick=()=>window.print();
 $("#searchBtn").onclick=()=>{$("#searchModal").classList.add("open");$("#searchInput").value="";searchRender("");setTimeout(()=>$("#searchInput").focus(),50)};
 $("#searchInput").oninput=e=>searchRender(e.target.value);
 $("#closeSearch").onclick=()=>$("#searchModal").classList.remove("open");
-$("#prevKeyboard").onclick=goPrev;
-$("#nextKeyboard").onclick=goNext;
-if(window.visualViewport){window.visualViewport.addEventListener("resize",positionTools);window.visualViewport.addEventListener("scroll",positionTools)}
 load();
 </script>
 </body>
